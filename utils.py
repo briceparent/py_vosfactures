@@ -1,13 +1,11 @@
 import json
 import requests
 
+from settings import API_TOKEN, HOST
+
 
 class HttpError(Exception):
     pass
-
-
-API_TOKEN = "O8un72S5qRgjyFyj30YG/bricexyz"
-HOST = 'bricexyz.vosfactures.fr'
 
 
 def get(**kwargs):
