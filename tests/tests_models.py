@@ -1,10 +1,10 @@
-from unittest import TestCase
 from unittest.mock import patch
 
 from models import Client, ObjectIsDeletedError
+from tests.base import BaseTestCase
 
 
-class ClientTest(TestCase):
+class ClientTest(BaseTestCase):
     client_test_data = {
             'id': 6346560, 'name': 'Company name', 'tax_no': "123456", 'post_code': None, 'city': None,
             'street': None, 'first_name': None, 'country': None, 'email': None, 'phone': None, 'www': None, 'fax': None,

@@ -1,3 +1,6 @@
 env
 .idea
-settings.py
+__pyu
+*.pyc
+
+local_settings.py

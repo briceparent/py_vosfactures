@@ -1,10 +1,10 @@
-from unittest import TestCase
 from unittest.mock import patch, MagicMock
 
+from tests.base import BaseTestCase
 from utils import get, delete, post, put, HttpError
 
 
-class QueryFunctionTest(TestCase):
+class QueryFunctionTest(BaseTestCase):
     def setUp(self):
         self.patcher = patch('utils.requests')
         self.mock_requests = self.patcher.start()
@@ -23,9 +23,9 @@ class QueryFunctionTest(TestCase):
 
         get(json_page="some_page", action='some_action')
         self.mock_requests.get.assert_called_with(
-            url="https://bricexyz.vosfactures.fr/some_page.json",
+            url="https://testserver.vosfactures.fr/some_page.json",
             headers={'Accept': 'application/json', 'Content-Type': 'application/json'},
-            data='{"api_token": "O8un72S5qRgjyFyj30YG/bricexyz", "some_action": {}}'
+            data='{"api_token": "anotsorandomapitoken", "some_action": {}}'
         )
 
     def test_url_without_instance(self):
@@ -35,9 +35,9 @@ class QueryFunctionTest(TestCase):
 
         get(json_page="some_page", action='some_action')
         self.mock_requests.get.assert_called_with(
-            url="https://bricexyz.vosfactures.fr/some_page.json",
+            url="https://testserver.vosfactures.fr/some_page.json",
             headers={'Accept': 'application/json', 'Content-Type': 'application/json'},
-            data='{"api_token": "O8un72S5qRgjyFyj30YG/bricexyz", "some_action": {}}'
+            data='{"api_token": "anotsorandomapitoken", "some_action": {}}'
         )
 
     def test_url_with_instance(self):
@@ -47,9 +47,9 @@ class QueryFunctionTest(TestCase):
 
         get(json_page="some_page", action='some_action', instance_id=150)
         self.mock_requests.get.assert_called_with(
-            url="https://bricexyz.vosfactures.fr/some_page/150.json",
+            url="https://testserver.vosfactures.fr/some_page/150.json",
             headers={'Accept': 'application/json', 'Content-Type': 'application/json'},
-            data='{"api_token": "O8un72S5qRgjyFyj30YG/bricexyz", "some_action": {}}'
+            data='{"api_token": "anotsorandomapitoken", "some_action": {}}'
         )
 
     def test_with_data(self):
@@ -59,9 +59,9 @@ class QueryFunctionTest(TestCase):
 
         get(json_page="some_page", action='some_action', some="data")
         self.mock_requests.get.assert_called_with(
-            url="https://bricexyz.vosfactures.fr/some_page.json",
+            url="https://testserver.vosfactures.fr/some_page.json",
             headers={'Accept': 'application/json', 'Content-Type': 'application/json'},
-            data='{"api_token": "O8un72S5qRgjyFyj30YG/bricexyz", "some_action": {"some": "data"}}'
+            data='{"api_token": "anotsorandomapitoken", "some_action": {"some": "data"}}'
         )
 
     def test_wrong_status_code(self):
@@ -79,9 +79,9 @@ class QueryFunctionTest(TestCase):
 
         get(json_page="some_page", action='some_action')
         self.mock_requests.get.assert_called_with(
-            url="https://bricexyz.vosfactures.fr/some_page.json",
+            url="https://testserver.vosfactures.fr/some_page.json",
             headers={'Accept': 'application/json', 'Content-Type': 'application/json'},
-            data='{"api_token": "O8un72S5qRgjyFyj30YG/bricexyz", "some_action": {}}'
+            data='{"api_token": "anotsorandomapitoken", "some_action": {}}'
         )
 
     def test_post(self):
@@ -91,9 +91,9 @@ class QueryFunctionTest(TestCase):
 
         post(json_page="some_page", action='some_action')
         self.mock_requests.post.assert_called_with(
-            url="https://bricexyz.vosfactures.fr/some_page.json",
+            url="https://testserver.vosfactures.fr/some_page.json",
             headers={'Accept': 'application/json', 'Content-Type': 'application/json'},
-            data='{"api_token": "O8un72S5qRgjyFyj30YG/bricexyz", "some_action": {}}'
+            data='{"api_token": "anotsorandomapitoken", "some_action": {}}'
         )
 
     def test_put(self):
@@ -103,9 +103,9 @@ class QueryFunctionTest(TestCase):
 
         put(json_page="some_page", action='some_action', new_data="here it is")
         self.mock_requests.put.assert_called_with(
-            url="https://bricexyz.vosfactures.fr/some_page.json",
+            url="https://testserver.vosfactures.fr/some_page.json",
             headers={'Accept': 'application/json', 'Content-Type': 'application/json'},
-            data='{"api_token": "O8un72S5qRgjyFyj30YG/bricexyz", "some_action": {"new_data": "here it is"}}'
+            data='{"api_token": "anotsorandomapitoken", "some_action": {"new_data": "here it is"}}'
         )
 
     def test_delete(self):
@@ -115,7 +115,7 @@ class QueryFunctionTest(TestCase):
 
         delete(json_page="some_page", action='some_action', instance_id=12345)
         self.mock_requests.delete.assert_called_with(
-            url="https://bricexyz.vosfactures.fr/some_page/12345.json",
+            url="https://testserver.vosfactures.fr/some_page/12345.json",
             headers={'Accept': 'application/json', 'Content-Type': 'application/json'},
-            data='{"api_token": "O8un72S5qRgjyFyj30YG/bricexyz", "some_action": {}}'
+            data='{"api_token": "anotsorandomapitoken", "some_action": {}}'
         )

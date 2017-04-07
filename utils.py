@@ -1,7 +1,7 @@
 import json
 import requests
 
-from settings import API_TOKEN, HOST
+import settings
 
 
 class HttpError(Exception):
@@ -26,9 +26,9 @@ def put(**kwargs):
 
 def query(json_page=None, action=None, instance_id=None, method="GET", **kwargs):
     if instance_id is None:
-        url = "https://{}/{}.json".format(HOST, json_page)
+        url = "https://{}/{}.json".format(settings.HOST, json_page)
     else:
-        url = "https://{}/{}/{}.json".format(HOST, json_page, instance_id)
+        url = "https://{}/{}/{}.json".format(settings.HOST, json_page, instance_id)
 
     if method == "GET":
         req_method = requests.get
@@ -45,7 +45,7 @@ def query(json_page=None, action=None, instance_id=None, method="GET", **kwargs)
     }
 
     # Creating the passed data as json
-    data = json.dumps({"api_token": API_TOKEN, action: kwargs})
+    data = json.dumps({"api_token": settings.API_TOKEN, action: kwargs})
 
     response = req_method(url=url, headers=headers, data=data)
 
