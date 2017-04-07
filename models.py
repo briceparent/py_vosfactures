@@ -13,16 +13,24 @@ class BaseData:
     _update_data = dict(json_page="", action="")
     _required_properties = []
     _auto_data = []
+    _default_data = []
     _assigning_data = False
     _is_deleted = False
-
 
     @classmethod
     def create(cls, **kwargs):
         nothing = object()
+        missing_fields = []
         for argument in cls._required_properties:
             if kwargs.get(argument, nothing) == nothing:
-                raise ValueError('"{}" is required to create this object'.format(argument))
+                missing_fields.append(argument)
+
+        if missing_fields:
+            raise ValueError('Some fields ({}) are required to create this object'.format(", ".join(missing_fields)))
+
+        for argument in cls._default_data:
+            if kwargs.get(argument, nothing) == nothing:
+                kwargs[argument] = getattr(cls, argument)
 
         kwargs.update(cls._create_data)
         element_data = post(**kwargs)
@@ -237,14 +245,26 @@ class Product(BaseData):
     _get_data = dict(json_page="products", action="product")
     _list_data = dict(json_page="products", action="products")
     _update_data = dict(json_page="products", action="product")
-    _required_properties = []
+    _required_properties = ["name", "price_net", "tax"]
+    _auto_data = ['created_at', 'updated_at', 'deleted']
+    _default_data = ['currency']
 
     id = None
     name = None
-    code = None
-    additional_info = None
+    description = None
     price_net = None
     tax = None
+    created_at = None
+    updated_at = None
+    disabled = None
+    deleted = None
+    code = None
+    currency = 'EUR'
+    category_id = None
+    kind = None
+
+    def __str__(self):
+        return "{} : {} ({} {})".format(self.id, self.name, self.price_net, self.currency)
 
 
 # @todo Test this
