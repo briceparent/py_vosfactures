@@ -47,6 +47,7 @@ def query(json_page=None, action=None, instance_id=None, method="GET", **kwargs)
     # Creating the passed data as json
     data = json.dumps({"api_token": settings.API_TOKEN, action: kwargs})
 
+    print(url, data)
     response = req_method(url=url, headers=headers, data=data)
 
     right_responses = {'GET': [200, 204, 205], 'POST': [201], 'DELETE': [200], 'PUT': [200]}
