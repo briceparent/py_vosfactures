@@ -114,8 +114,7 @@ class BaseData:
 
 # Values for the fields
 
-# @todo Test this
-class DocumentKind(BaseData):
+class DocumentKind:
     bill = "vat"  # pour facture
     estimate = "estimate"  # pour devis      
     proforma = "proforma"  # Facture proforma
@@ -129,21 +128,18 @@ class DocumentKind(BaseData):
     kw = "kw"  # pour bon de sortie de caisse
     
 
-# @todo Test this
-class DocumentIncome(BaseData):
+class DocumentIncome:
     income = 1  # Revenu
     expense = 0  # Dépense
 
 
-# @todo Test this
-class CalculatingStrategy(BaseData):
+class CalculatingStrategy:
     position = "default"  # "default" ou "keep_gross"  # Comment se calcule le total de chaque ligne
     sum = "sum"  # ""sum" ou "keep_gross" ou "keep_net"  # Comment se calcule le total des colonnes
     invoice_form_price_kind = "net"  # "net" ou "gross"  # prix unitaire (HT ou TTC)
 
 
-# @todo Test this
-class PaymmentType(BaseData):
+class PaymmentType:
     transfer = "transfer"  # virement bancaire
     card = "card"  # carte bancaire
     cash = "cash"  # espèce
@@ -151,6 +147,18 @@ class PaymmentType(BaseData):
     paypal = "paypal"  # PayPal
     off = "off"  # aucun(ne pas afficher)
     any_other_text_entry = "any_other_text_entry"  # autre
+
+
+class Status:
+    issued = "issued"  # Créé
+    sent = "sent"  # Envoyé
+    paid = "paid"  # Payé
+    partial = "partial"  # Payé en partie
+    rejected = "rejected"  # Refusé
+    accepted = "accepted"  # Accepté
+
+
+# Models
 
 
 # @todo Test this
@@ -221,18 +229,6 @@ class Client(BaseData):
     def __str__(self):
         return "{} ({})".format(self.name, self.id)
 
-
-# @todo Test this
-class Status(BaseData):
-    issued = "issued"  # Créé
-    sent = "sent"  # Envoyé
-    paid = "paid"  # Payé
-    partial = "partial"  # Payé en partie
-    rejected = "rejected"  # Refusé
-    accepted = "accepted"  # Accepté
-
-
-# Models
 
 # @todo Test this
 class Product(BaseData):
