@@ -51,6 +51,7 @@ def query(json_page=None, action=None, instance_id=None, method="GET", **kwargs)
 
     right_responses = {'GET': [200, 204, 205], 'POST': [201], 'DELETE': [200], 'PUT': [200]}
     if response.status_code in right_responses[method]:
+        print(response.json())
         return response.json()
 
     error_msg = "Error {} during the query process for {} ({}). Data : {}, response : {}"

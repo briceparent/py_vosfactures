@@ -21,15 +21,20 @@ class BaseData:
     _default_data = []
     _assigning_data = False
     _is_deleted = False
-    _available_commands = ['list', 'update']
+    _forbidden_commands = []
 
     def _check_command_available(self, command):
         if hasattr(self, "__name__"):
             # Called from a classmethod
-            classname = self.__name__
+            the_class = self
         else:
             # Called from an instance's method
-            classname = self.__class__.__name__
+            the_class = self.__class__
+
+        classname = the_class.__name__
+
+        if command in the_class._forbidden_commands:
+            raise CommandUnavailable('The "{}" command does not exist for {} model'.format(command, classname))
 
         if command not in AVAILABLE_COMMANDS[classname]:
             raise CommandUnavailable('The "{}" command is not allowed for {} model'.format(command, classname))
@@ -275,12 +280,19 @@ class Product(BaseData):
 
 
 class Department(BaseData):
+    _create_data = dict(json_page="departments", action="departments")
+    _delete_data = dict(json_page="departments", action="departments")
     _get_data = dict(json_page="departments", action="department")
     _list_data = dict(json_page="departments", action="departments")
+    _update_data = dict(json_page="departments", action="departments")
+    _forbidden_commands = ['create', 'update', 'delete']
 
     id = None
     shortcut = None
     name = None
+
+    def __str__(self):
+        return "{} ({})".format(self.name, self.shortcut)
 
 
 class Invoice(BaseData):

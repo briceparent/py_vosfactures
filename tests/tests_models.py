@@ -1,7 +1,7 @@
 from unittest.mock import patch
 
 import settings
-from models import Client, Invoice, ObjectIsDeletedError, Product, BaseData, Status, CommandUnavailable
+from models import Client, Department, Invoice, ObjectIsDeletedError, Product, BaseData, Status, CommandUnavailable
 from tests.base import BaseTestCase
 
 
@@ -32,6 +32,10 @@ class ExampleForbiddenModel(ExampleModel):
     pass
 
 
+class ExampleForbiddenCommandsModel(ExampleModel):
+    _forbidden_commands = ['get', 'list', 'create', 'update', 'delete']
+
+
 # Unit tests
 
 class BaseDataTest(BaseTestCase):
@@ -45,11 +49,29 @@ class BaseDataTest(BaseTestCase):
         super().setUpClass()
         settings.AVAILABLE_COMMANDS['ExampleModel'] = ['create', 'get', 'list', 'update', 'delete']
         settings.AVAILABLE_COMMANDS['ExampleForbiddenModel'] = []
+        settings.AVAILABLE_COMMANDS['ExampleForbiddenCommandsModel'] = ['create', 'get', 'list', 'update', 'delete']
 
     def _get_updated_test_data(self, **kwargs):
         new_test_data = self.test_data.copy()
         new_test_data.update(kwargs)
         return new_test_data
+
+    def test_forbidden_commands_really_forbidden(self):
+        with self.assertRaises(CommandUnavailable):
+            ExampleForbiddenCommandsModel.create()
+
+        with self.assertRaises(CommandUnavailable):
+            ExampleForbiddenCommandsModel.get(instance_id=1)
+
+        with self.assertRaises(CommandUnavailable):
+            ExampleForbiddenCommandsModel.list()
+
+        e = ExampleForbiddenCommandsModel()
+        with self.assertRaises(CommandUnavailable):
+            e.update()
+
+        with self.assertRaises(CommandUnavailable):
+            e.delete()
 
     def test_unavailable_commands_really_forbidden(self):
         with self.assertRaises(CommandUnavailable):
@@ -197,6 +219,13 @@ class ClientTest(BaseTestCase):
         el = Client.create(name="Customer name")
         self.assertEqual(str(el), "Company name (1)")
 
+    def test_forbidden_commands(self):
+        self.assertNotIn('get', Client._forbidden_commands)
+        self.assertNotIn('list', Client._forbidden_commands)
+        self.assertNotIn('create', Client._forbidden_commands)
+        self.assertNotIn('update', Client._forbidden_commands)
+        self.assertNotIn('delete', Client._forbidden_commands)
+
 
 class ProductTest(BaseTestCase):
     test_data = {
@@ -229,6 +258,13 @@ class ProductTest(BaseTestCase):
         mock_post.return_value = self.test_data
         el = Product.create(name="Prod", price_net=1, tax=1)
         self.assertEqual(str(el), "1 : Test product (250.0 EUR)")
+
+    def test_forbidden_commands(self):
+        self.assertNotIn('get', Product._forbidden_commands)
+        self.assertNotIn('list', Product._forbidden_commands)
+        self.assertNotIn('create', Product._forbidden_commands)
+        self.assertNotIn('update', Product._forbidden_commands)
+        self.assertNotIn('delete', Product._forbidden_commands)
 
 
 class InvoiceTest(BaseTestCase):
@@ -303,3 +339,62 @@ class InvoiceTest(BaseTestCase):
         el.set_status(Status.sent)
         self.assertEqual(el.status, Status.sent)
         mock_invoice_update.assert_called_with()
+
+    def test_forbidden_commands(self):
+        self.assertNotIn('get', Invoice._forbidden_commands)
+        self.assertNotIn('list', Invoice._forbidden_commands)
+        self.assertNotIn('create', Invoice._forbidden_commands)
+        self.assertNotIn('update', Invoice._forbidden_commands)
+        self.assertNotIn('delete', Invoice._forbidden_commands)
+
+
+class DepartmentTest(BaseTestCase):
+    test_data = {'id': 1, 'shortcut': 'Factures Test', 'name': 'Factures Test Department', 'tax_no': '123456789',
+                 'post_code': '12345', 'city': 'Town City', 'street': '3 name street', 'person': '', 'country': 'FR',
+                 'email': 'contact@domain.xyz', 'phone': '', 'www': '', 'fax': '', 'logo_file_name': None,
+                 'logo_content_type': None, 'logo_file_size': None, 'logo_updated_at': None, 'use_pattern': False,
+                 'invoice_pattern': 'Fyyyy-nr', 'bank': '', 'bank_account': '',
+                 'created_at': '2017-04-05T16:25:26.000+02:00', 'updated_at': '2017-04-07T17:52:09.000+02:00',
+                 'invoice_pattern_bill': 'Rnr', 'invoice_pattern_proforma': 'Pnr',
+                 'invoice_pattern_correction': 'A/nr', 'warehouse_id': None, 'restrict_warehouses': False,
+                 'deleted': False, 'invoice_pattern_receipt': 'R/nr', 'invoice_pattern_advance': 'FA/nr',
+                 'invoice_pattern_final': 'FS/nr', 'pattern_vat_rr': 'RRnr', 'pattern_vat_mp': 'MPnr',
+                 'pattern_vat_margin': 'Mnr', 'tax_no_kind': '', 'main': True, 'stamp_file_name': None,
+                 'stamp_content_type': None, 'stamp_file_size': None, 'stamp_updated_at': None, 'pattern_pz': 'BE/nr',
+                 'pattern_wz': 'BL/nr', 'pattern_mm': 'BT/nr', 'pattern_kp': 'KPnr', 'pattern_kw': 'KWnr',
+                 'pattern_invoice_other': 'Bnr', 'pattern_estimate': 'Dyyyy-nr', 'use_mass_payment': False,
+                 'mass_payment_pattern': None, 'kind': 'Ltd', 'mobile_phone': '0123456789',
+                 'use_correspondence_address': False, 'correspondence_address': None, 'capital_kind': '',
+                 'capital': None, 'capital_currency': '', 'tax_kind': '', 'register1_status': 'yes',
+                 'register1_number1': '123456789', 'register1_number2': '', 'register1_number3': 'Town City',
+                 'register2_status': '0', 'register2_number1': '', 'register2_number2': '', 'register2_number3': None,
+                 'register3_status': '0', 'register3_number1': '', 'register3_number2': '', 'register3_number3': '',
+                 'register4_status': '1', 'register4_number1': None, 'register4_number2': None,
+                 'register4_number3': None, 'register5_status': '0', 'register5_number1': '', 'register5_number2': '',
+                 'register5_number3': '', 'bank_account_name': None, 'bank_iban': None, 'bank_swift': '',
+                 'own_email_settings': False, 'email_from': '', 'email_cc': '', 'email_subject': '',
+                 'email_template': None, 'email_template_kind': 'default', 'email_pdf': False,
+                 'own_overdue_email_settings': False, 'overdue_email_subject': '', 'overdue_email_template': None,
+                 'overdue_email_template_kind': 'default', 'overdue_email_pdf': False, 'invoice_lang': '',
+                 'invoice_description': '', 'bank_account_currency': '', 'pattern_zt': 'BC/nr',
+                 'invoice_pattern_correction_note': 'NKnr', 'pattern_client_order': 'BC/nr',
+                 'invoice_pattern_accounting_note': 'Nnr', 'own_footer': False, 'footer_content': '',
+                 'calculate_number_by_pattern_only': False, 'footer_kind': 'default', 'use_invoice_issuer': False,
+                 'cash_init_state': None, 'invoice_template_id': None}
+
+    @patch('models.get')
+    def test_extends_BaseData(self, _):
+        self.assertIsInstance(Department.get(instance_id=1), BaseData)
+
+    @patch('models.get')
+    def test_has_magic_string(self, mock_get):
+        mock_get.return_value = self.test_data
+        el = Department.get(instance_id=1)
+        self.assertEqual(str(el), "Factures Test Department (Factures Test)")
+
+    def test_forbidden_commands(self):
+        self.assertNotIn('get', Department._forbidden_commands)
+        self.assertNotIn('list', Department._forbidden_commands)
+        self.assertIn('create', Department._forbidden_commands)
+        self.assertIn('update', Department._forbidden_commands)
+        self.assertIn('delete', Department._forbidden_commands)
