@@ -1,6 +1,7 @@
 from unittest.mock import patch
 
-from models import Client, ObjectIsDeletedError, Product, BaseData
+import settings
+from models import Client, Invoice, ObjectIsDeletedError, Product, BaseData, Status, CommandUnavailable
 from tests.base import BaseTestCase
 
 
@@ -27,6 +28,10 @@ class ExampleModel(BaseData):
         return "{} : {}".format(self.id, self.title)
 
 
+class ExampleForbiddenModel(ExampleModel):
+    pass
+
+
 # Unit tests
 
 class BaseDataTest(BaseTestCase):
@@ -35,10 +40,33 @@ class BaseDataTest(BaseTestCase):
             'id': 1, 'title': 'Example title', 'description': "Example description", 'author': "John", 'active': True,
             'creation_date': '2017-04-06T16:26:59.745+02:00'}
 
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        settings.AVAILABLE_COMMANDS['ExampleModel'] = ['create', 'get', 'list', 'update', 'delete']
+        settings.AVAILABLE_COMMANDS['ExampleForbiddenModel'] = []
+
     def _get_updated_test_data(self, **kwargs):
         new_test_data = self.test_data.copy()
         new_test_data.update(kwargs)
         return new_test_data
+
+    def test_unavailable_commands_really_forbidden(self):
+        with self.assertRaises(CommandUnavailable):
+            ExampleForbiddenModel.create()
+
+        with self.assertRaises(CommandUnavailable):
+            ExampleForbiddenModel.get(instance_id=1)
+
+        with self.assertRaises(CommandUnavailable):
+            ExampleForbiddenModel.list()
+
+        e = ExampleForbiddenModel()
+        with self.assertRaises(CommandUnavailable):
+            e.update()
+
+        with self.assertRaises(CommandUnavailable):
+            e.delete()
 
     @patch('models.get')
     def test_get(self, mock_get):
@@ -201,3 +229,77 @@ class ProductTest(BaseTestCase):
         mock_post.return_value = self.test_data
         el = Product.create(name="Prod", price_net=1, tax=1)
         self.assertEqual(str(el), "1 : Test product (250.0 EUR)")
+
+
+class InvoiceTest(BaseTestCase):
+    test_data = {'id': 1, 'user_id': 1, 'app': None, 'number': '2017-09', 'place': None,
+                 'sell_date': '2017-04-07', 'payment_type': None, 'price_net': '797.73', 'price_gross': '952.5',
+                 'currency': 'EUR', 'status': 'issued', 'description': None, 'seller_name': 'Facture de test',
+                 'seller_tax_no': '123456789', 'seller_street': '', 'seller_post_code': '', 'seller_city': '',
+                 'seller_country': '', 'seller_email': '', 'seller_phone': '', 'seller_fax': '', 'seller_www': '',
+                 'seller_person': '', 'seller_bank': '', 'seller_bank_account': '', 'buyer_name': 'Travaux.com, test',
+                 'buyer_tax_no': '987654321', 'buyer_post_code': '78001', 'buyer_city': 'Stazunis',
+                 'buyer_street': 'Av Georges Fitgéralde Kentucky', 'buyer_first_name': 'Sophie', 'buyer_country': 'FR',
+                 'created_at': '2017-04-07T17:07:53.000+02:00', 'updated_at': '2017-04-07T17:07:53.000+02:00',
+                 'token': 'NP4WXnGNQDu3y2Y4DxUi', 'buyer_email': 'c321@fhdj.com', 'buyer_www': '', 'buyer_fax': '',
+                 'buyer_phone': '123456789', 'kind': 'vat', 'pattern': 'nr', 'pattern_nr': 2017, 'pattern_nr_m': None,
+                 'pattern_nr_d': None, 'client_id': 1, 'payment_to': '2017-04-08', 'paid': '0.0',
+                 'seller_bank_account_id': None, 'lang': 'fr', 'issue_date': '2017-04-07', 'price_tax': '154.77',
+                 'department_id': 1, 'correction': None, 'buyer_note': '', 'additional_info_desc': None,
+                 'additional_info': False, 'product_cache': 'test, Guide ', 'buyer_last_name': 'Garnier',
+                 'from_invoice_id': None, 'oid': None, 'discount': '0.0', 'show_discount': False, 'sent_time': None,
+                 'print_time': None, 'recurring_id': None, 'tax2_visible': False, 'warehouse_id': None,
+                 'paid_date': None, 'product_id': None, 'issue_year': 2017, 'internal_note': None, 'invoice_id': None,
+                 'invoice_template_id': 2413, 'description_long': None, 'buyer_tax_no_kind': '',
+                 'seller_tax_no_kind': '', 'description_footer': None, 'sell_date_kind': 'Date limite de validité',
+                 'payment_to_kind': 'other_date', 'exchange_currency': None, 'discount_kind': 'percent_total',
+                 'income': True, 'from_api': True, 'category_id': None, 'warehouse_document_id': None,
+                 'exchange_kind': 'ecb', 'exchange_rate': '1.0', 'use_delivery_address': False, 'delivery_address': '',
+                 'accounting_kind': None, 'buyer_person': 'Sophie Garnier', 'buyer_bank_account': '', 'buyer_bank': '',
+                 'buyer_mass_payment_code': None, 'exchange_note': '', 'client_company': True, 'buyer_company': True,
+                 'show_attachments': False, 'exchange_currency_rate': None, 'has_attachments': False,
+                 'exchange_date': None, 'attachments_count': 0, 'delivery_date': '2017-04-07', 'fiscal_status': None,
+                 'use_moss': False, 'transaction_date': '2017-04-07', 'email_status': None,
+                 'exclude_from_stock_level': False, 'exclude_from_accounting': False, 'exchange_rate_den': '1.0',
+                 'exchange_currency_rate_den': '1.0', 'accounting_scheme': None, 'exchange_difference': '0.0',
+                 'not_cost': False, 'reverse_charge': False, 'issuer': None, 'use_issuer': False, 'cancelled': False,
+                 'recipient_id': None, 'recipient_name': None, 'sales_code': '5246-1976-90146'}
+
+    @patch('models.post')
+    def test_create_requires_products(self, _):
+        # We refuse the invoices without any products
+        with self.assertRaises(ValueError):
+            Invoice.create(number="Inv num", title="Invoice #1", issue_date="2017-01-01", department_id=1, client_id=1,
+                           positions=[])
+
+    @patch('models.post')
+    def test_create_requires_products_by_id(self, _):
+        # We don't want to create the products from here, they should be passed with "product_id".
+        with self.assertRaises(ValueError):
+            Invoice.create(number="Inv num", title="Invoice #1", issue_date="2017-01-01", department_id=1, client_id=1,
+                           positions=[{"name": "test", "quantity": 2, "tax": 10, "total_price_gross": 52.5}])
+
+    @patch('models.post')
+    def test_extends_BaseData(self, _):
+        i = Invoice.create(number="Inv num", title="Invoice #1", issue_date="2017-01-01", department_id=1, client_id=1,
+                           positions=[{"product_id": 1, "quantity": 3}])
+        self.assertIsInstance(i, BaseData)
+
+    @patch('models.post')
+    def test_has_magic_string(self, mock_post):
+        mock_post.return_value = self.test_data
+        el = Invoice.create(number="Inv num", title="Invoice #1", issue_date="2017-01-01", department_id=1, client_id=1,
+                            positions=[{"product_id": 1, "quantity": 3}])
+        self.assertEqual(str(el), "1 : 2017-09 (797.73 EUR)")
+
+    @patch('models.get')
+    @patch('models.Invoice.update')
+    def test_set_status(self, mock_invoice_update, mock_get):
+        mock_get.return_value = self.test_data
+
+        el = Invoice.get(instance_id=1)
+
+        self.assertNotEqual(el.status, Status.sent)
+        el.set_status(Status.sent)
+        self.assertEqual(el.status, Status.sent)
+        mock_invoice_update.assert_called_with()

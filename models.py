@@ -1,7 +1,12 @@
+from settings import AVAILABLE_COMMANDS
 from utils import delete, get, post, put
 
 
 class ObjectIsDeletedError(Exception):
+    pass
+
+
+class CommandUnavailable(Exception):
     pass
 
 
@@ -16,9 +21,23 @@ class BaseData:
     _default_data = []
     _assigning_data = False
     _is_deleted = False
+    _available_commands = ['list', 'update']
+
+    def _check_command_available(self, command):
+        if hasattr(self, "__name__"):
+            # Called from a classmethod
+            classname = self.__name__
+        else:
+            # Called from an instance's method
+            classname = self.__class__.__name__
+
+        if command not in AVAILABLE_COMMANDS[classname]:
+            raise CommandUnavailable('The "{}" command is not allowed for {} model'.format(command, classname))
 
     @classmethod
     def create(cls, **kwargs):
+        cls._check_command_available(cls, 'create')
+
         nothing = object()
         missing_fields = []
         for argument in cls._required_properties:
@@ -39,6 +58,8 @@ class BaseData:
         return element
 
     def delete(self):
+        self._check_command_available('delete')
+
         if self._is_deleted:
             raise ObjectIsDeletedError("This object doesn't exist anymore")
 
@@ -49,6 +70,8 @@ class BaseData:
 
     @classmethod
     def get(cls, instance_id):
+        cls._check_command_available(cls, 'get')
+
         kwargs = dict(instance_id=instance_id)
         kwargs.update(cls._get_data)
         element_data = get(**kwargs)
@@ -59,6 +82,8 @@ class BaseData:
 
     @classmethod
     def list(cls):
+        cls._check_command_available(cls, 'list')
+
         elements = get(**cls._list_data)
         instances = []
         for element in elements:
@@ -69,6 +94,8 @@ class BaseData:
         return instances
 
     def update(self):
+        self._check_command_available('update')
+
         if self._is_deleted:
             raise ObjectIsDeletedError("This object doesn't exist anymore")
 
@@ -168,25 +195,6 @@ class Status:
 
 # Models
 
-
-# @todo Test this
-class Seller(BaseData):
-    seller_name = "Ma Société"  # Nom du département vendeur. Si ce champ n'est pas renseigné, le département principal est sélectionné par défaut. Préférez plutôt "department_id". Si vous utilisez toutefois "seller_name", le système tentera d'identifier le département portant ce nom, sinon il créera un nouveau département.
-    seller_tax_no = "FR5252445767"  # numéro d'identification fiscale du vendeur (ex: n° TVA)
-    seller_bank_account = "24 1140 1977 0000 5921 7200 1001"  # coordonnées bancaires du vendeur
-    seller_bank = "CREDIT AGRICOLE"  # domiciliation bancaire
-    seller_post_code = "75007"  # code postal du vendeur
-    seller_city = "Paris"  # ville du vendeur
-    seller_street = "21 Rue des Mimosas"  # numéro et nom de rue du vendeur
-    seller_country = ""  # pays du vendeur
-    seller_email = "contact@chose.com"  # email du vendeur
-    seller_www = ""  # site internet du vendeur
-    seller_fax = ""  # numéro de fax du vendeur
-    seller_phone = ""  # numéro de tel du vendeur
-    seller_person = ""  # Nom du vendeur (figurant en bas de page des documents)
-    department_id = "1"  # ID du département vendeur (depuis Paramètres > Compagnies/Départments, cliquer sur le nom de la compagnie/département pour visualiser l'ID dans l'url affiché). Le système affichera alors automatiquement les coordonnées du département vendeur (nom, adresse...) sur le document (les autres champs "seller_" ne sont plus nécessaires).
-
-
 class Client(BaseData):
     _create_data = dict(json_page="clients", action="client")
     _delete_data = dict(json_page="clients", action="client")
@@ -238,7 +246,6 @@ class Client(BaseData):
         return "{} ({})".format(self.name, self.id)
 
 
-# @todo Test this
 class Product(BaseData):
     _create_data = dict(json_page="products", action="product")
     _delete_data = dict(json_page="products", action="product")
@@ -267,63 +274,83 @@ class Product(BaseData):
         return "{} : {} ({} {})".format(self.id, self.name, self.price_net, self.currency)
 
 
-# @todo Test this
-class Document(BaseData):
-    number = None  # "13/2012" - numéro du document (généré automatiquement si non indiqué)
-    kind = DocumentKind.bill
-    income = DocumentIncome.income
-    issue_date = None  # "2013-01-16" - date de création
-    place = "Paris"  # lieu de création
-    sell_date = "off"   # - date additionnelle (ex: date de vente) : date complète ou juste mois et année:YYYY-MM. Pour ne pas faire apparaître cette date, indiquez "off" (ou décochez l'option "Afficher la Date additionnelle" depuis vos paramètres du compte).
-    category_id = ""  # ID de la catégorie
-    seller = None
-    buyer = None
-    additional_info = "0"  # afficher (1) ou non (0) la colonne aditionnelle
-    additional_info_desc = "Origine"  # titre de la colonne aditionnelle
-    show_discount = "0"  # afficher (1) ou non (0) la colonne réduction
-    payment_type = PaymmentType.transfer  # mode de règlement
-    payment_to_kind = 31  # date limite de règlement (parmi les options proposées). Si l'option est "Autre" ("other_date"), vous pouvez définir une date spécifique grâce au champ "payment_to". Si vous indiquez "5", la date d'échéance est de 5 jours. Pour ne pas afficher ce champ, indiquez "off".
-    payment_to = "2013-01-16"  # date limite de règlement
-    status = Status.issued  # état du document
-    paid = "0,00"  # montant payé
-    oid = "10021"  # numéro de commande (ex: numéro généré par une application externe)
-    oid_unique = "yes"  # si la valeur est «yes», alors il ne sera pas permis au système de créer 2 factures avec le même OID (cela peut être utile en cas de synchronisation avec une boutique en ligne)
-    warehouse_id = "1090"  # numéro d'identification de l'entrepôt
-    description = ""  # Informations spécifiques
-    paid_date = ""  # Date du paiement
-    currency = "EUR"  # devise
-    lang = "fr"  # langue du document
-    exchange_currency = ""  # convertir en (la conversion du montant total et du montant de la taxe en une autre devise selon taux de change du jour)
+class Department(BaseData):
+    _get_data = dict(json_page="departments", action="department")
+    _list_data = dict(json_page="departments", action="departments")
+
+    id = None
+    shortcut = None
+    name = None
+
+
+class Invoice(BaseData):
+    _create_data = dict(json_page="invoices", action="invoice")
+    _delete_data = dict(json_page="invoices", action="invoice")
+    _get_data = dict(json_page="invoices", action="invoice")
+    _list_data = dict(json_page="invoices", action="invoices")
+    _update_data = dict(json_page="invoices", action="invoice")
+    _required_properties = ['number', "title", "issue_date", "department_id", "client_id", "positions"]
+    _auto_data = ['created_at', 'updated_at']
+    _default_data = ['kind']
+
+    id = None
     title = ""  # Objet
-    internal_note = ""  # Notes privées
-    invoice_template_id = "1"  # format d'impression
+    number = None  # "13/2012" - numéro du document (généré automatiquement si non indiqué)
+    place = None  # lieu de création
+    payment_type = PaymmentType.transfer  # mode de règlement
+    price_net = None
+    price_gross = None
+    currency = "EUR"  # devise
+    status = Status.issued  # état du document
+    description = None # Informations spécifiques
+    paid = "0,00"  # montant payé
+    lang = "fr"  # langue du document
+    recipient_id = None
+    client_id = None
+    invoice_id = None
+    kind = DocumentKind.bill
+    token = None
+    cancelled = None
+    income = DocumentIncome.income
+
+    payment_to_kind = 31  # date limite de règlement (parmi les options proposées). Si l'option est "Autre" ("other_date"), vous pouvez définir une date spécifique grâce au champ "payment_to". Si vous indiquez "5", la date d'échéance est de 5 jours. Pour ne pas afficher ce champ, indiquez "off".
+    sell_date = "off"   # - date additionnelle (ex: date de vente) : date complète ou juste mois et année:YYYY-MM. Pour ne pas faire apparaître cette date, indiquez "off" (ou décochez l'option "Afficher la Date additionnelle" depuis vos paramètres du compte).
+    created_at = None
+    updated_at = None
+    sent_time = None
+    paid_date = None  # Date du paiement
+    payment_to = None  # date limite de règlement
+    issue_date = None  # "2013-01-16" - date de création
+
     description_footer = ""  # Bas de page
     description_long = ""  # Texte additionnel (imprimé sur la page suivante)
-    from_invoice_id = ""  # ID du document de référence depuis lequel le document a été généré (utile par ex quand une facture est générée depuis un devis)
     positions = []  # Liste de positions
     hide_tax = "1"  # Montant TTC uniquement (ne pas afficher de montant HT ni de taxe)
-    calculating_strategy = CalculatingStrategy()
+    calculating_strategy = CalculatingStrategy.position
 
-    def add_position(self, product, quantity):
-        position = Position()
-        position.product = product
-        position.quantity = quantity
-        self.positions.append(position)
+    def __str__(self):
+        return "{} : {} ({} {})".format(self.id, self.number, self.price_net, self.currency)
 
-    def __init__(self, doc_id=None, seller: Seller = None, buyer: Client = None):
-        self.oid = doc_id
-        self.seller = seller
-        self.buyer = buyer
+    @classmethod
+    def create(cls, **kwargs):
+        # For my needs, I want to prevent the  creation of products from the creation of invoices. Products should be
+        # created separately then added the new invoices.
+        products = kwargs.get("positions", [])
+        error = False
+        if products:
+            for product in products:
+                if 'product_id' not in product:
+                    # If this keyword is not set, a new product would be generated
+                    error = True
 
+        else:
+            error = True
 
-# @todo Test this
-class Position(BaseData):
-    product: None
-    discount_percent = ""  # % de la réduction (remarque: afin de pouvoir appliquer la réduction, il faut au préalable donner à "show_discount" la valeur de 1 et vérfier si dans les Paramètres du compte > Options par défaut, l'option choisie sous le champ 'Comment calculer la réduction' est 'pourcentage du prix unitaire net')
-    discount = "",  # montant de la réduction (remarque: afin de pouvoir appliquer la réduction, il faut au préalable donner à "show_discount" la valeur de 1 et vérfier si dans les Paramètres du compte > Options par défaut, l'option choisie sous le champ 'Comment calculer la réduction' est 'Montant (TTC)')
-    quantity = "1"  # quantité
-    quantity_unit = "kg"  # unité
-    price_gross = "72,57"  # prix unitaire TTC (calculé automatiquement si non indiqué)
-    total_price_net = "59,00"  # total HT (calculé automatiquement si non indiqué)
-    total_price_gross = "72,57"  # total TTC
+        if error:
+            raise ValueError("The creation of invoices require existing products")
 
+        return super().create(**kwargs)
+
+    def set_status(self, status):
+        self.status = status
+        self.update()
