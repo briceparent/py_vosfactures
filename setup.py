@@ -19,7 +19,7 @@ setup(
     keywords="vosfactures",
     url="https://github.com/briceparent/py_vosfactures",
     packages=['vosfactures'],
-    long_description=read('README'),
+    long_description=read('README.md'),
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Topic :: Utilities",
