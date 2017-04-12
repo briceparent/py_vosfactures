@@ -1,10 +1,10 @@
 try:
     # Getting the settings from django
-    from django.conf.settings import VOSFACTURES_HOST, VOSFACTURES_API_TOKEN, VOSFACTURES_AVAILABLE_COMMANDS
+    from django.conf import settings
 except (ImportError, ImportError):
     # getting the settings from the local local_settings.py file
     from vosfactures.local_settings import *
 else:
-    HOST = VOSFACTURES_HOST
-    API_TOKEN = VOSFACTURES_API_TOKEN
-    AVAILABLE_COMMANDS = VOSFACTURES_AVAILABLE_COMMANDS
+    HOST = settings.VOSFACTURES_HOST
+    API_TOKEN = settings.VOSFACTURES_API_TOKEN
+    AVAILABLE_COMMANDS = settings.VOSFACTURES_AVAILABLE_COMMANDS
