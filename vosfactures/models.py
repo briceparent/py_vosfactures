@@ -1,5 +1,5 @@
-from settings import AVAILABLE_COMMANDS
-from utils import delete, get, post, put
+from vosfactures.utils import delete, get, post, put
+from vosfactures.settings import AVAILABLE_COMMANDS
 
 
 class ObjectIsDeletedError(Exception):
@@ -22,6 +22,7 @@ class BaseData:
     _assigning_data = False
     _is_deleted = False
     _forbidden_commands = []
+    _updated_fields = []
 
     def _check_command_available(self, command):
         if hasattr(self, "__name__"):
@@ -105,13 +106,9 @@ class BaseData:
             raise ObjectIsDeletedError("This object doesn't exist anymore")
 
         kwargs = self._update_data
-        for prop in vars(self.__class__):
-            if callable(getattr(self.__class__, prop)):
-                continue
 
-            if prop.startswith('_'):
-                continue
-
+        updated_fields = self._updated_fields
+        for prop in updated_fields:
             val = getattr(self, prop)
             if val is None:
                 continue
@@ -119,6 +116,7 @@ class BaseData:
             if prop not in self._auto_data:
                 kwargs[prop] = getattr(self, prop)
 
+        self._updated_fields = []
         element_data = put(instance_id=self.id, **kwargs)
         self._set_data(**element_data)
         return self
@@ -145,6 +143,10 @@ class BaseData:
             if key in self._auto_data:
                 raise Exception("The following properties are set automatically and can't be edited : {}".format(
                     self._auto_data))
+
+            if not key.startswith('_'):
+                # We don't send hidden properties
+                self._updated_fields.append(key)
 
         super().__setattr__(key, value)
 
@@ -265,6 +267,7 @@ class Product(BaseData):
     name = None
     description = None
     price_net = None
+    price_gross = None
     tax = None
     created_at = None
     updated_at = None
@@ -301,7 +304,7 @@ class Invoice(BaseData):
     _get_data = dict(json_page="invoices", action="invoice")
     _list_data = dict(json_page="invoices", action="invoices")
     _update_data = dict(json_page="invoices", action="invoice")
-    _required_properties = ['number', "title", "issue_date", "department_id", "client_id", "positions"]
+    _required_properties = ["title", "issue_date", "department_id", "client_id", "positions"]
     _auto_data = ['created_at', 'updated_at']
     _default_data = ['kind']
 
@@ -359,7 +362,8 @@ class Invoice(BaseData):
             error = True
 
         if error:
-            raise ValueError("The creation of invoices require existing products")
+            raise ValueError('The creation of invoices require existing products '
+                             '(ex : positions=[{"product_id":p.id, "quantity":2}]')
 
         return super().create(**kwargs)
 

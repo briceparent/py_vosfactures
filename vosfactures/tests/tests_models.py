@@ -1,8 +1,9 @@
 from unittest.mock import patch
 
-import settings
-from models import Client, Department, Invoice, ObjectIsDeletedError, Product, BaseData, Status, CommandUnavailable
-from tests.base import BaseTestCase
+from vosfactures import settings
+from vosfactures.models import Client, Department, Invoice, ObjectIsDeletedError, Product, BaseData, Status, \
+    CommandUnavailable
+from vosfactures.tests.base import BaseTestCase
 
 
 # Sample model, used to test the behaviours of BaseData
@@ -90,7 +91,7 @@ class BaseDataTest(BaseTestCase):
         with self.assertRaises(CommandUnavailable):
             e.delete()
 
-    @patch('models.get')
+    @patch('vosfactures.models.get')
     def test_get(self, mock_get):
         mock_get.return_value = self.test_data
 
@@ -100,7 +101,7 @@ class BaseDataTest(BaseTestCase):
         self.assertEqual(c.title, 'Example title')
         self.assertEqual(c.active, True)
 
-    @patch('models.post')
+    @patch('vosfactures.models.post')
     def test_create(self, mock_post):
         new_title = "A new title"
         mock_post.return_value = self._get_updated_test_data(title=new_title)
@@ -114,8 +115,8 @@ class BaseDataTest(BaseTestCase):
         # Its properties have been set correctly
         self.assertEqual(el.title, new_title)
 
-    @patch('models.get')
-    @patch('models.delete')
+    @patch('vosfactures.models.get')
+    @patch('vosfactures.models.delete')
     def test_delete(self, mock_delete, mock_get):
         mock_get.return_value = self.test_data
         mock_delete.return_value = {}
@@ -128,8 +129,8 @@ class BaseDataTest(BaseTestCase):
 
         self.assertTrue(el.is_deleted())
 
-    @patch('models.get')
-    @patch('models.put')
+    @patch('vosfactures.models.get')
+    @patch('vosfactures.models.put')
     def test_update(self, mock_put, mock_get):
         new_title = "Other title"
         mock_get.return_value = self.test_data
@@ -142,13 +143,12 @@ class BaseDataTest(BaseTestCase):
         self.assertNotEqual(el.title, new_title)
         el.title = new_title
         el.update()
-        mock_put.assert_called_with(json_page='page', action='action', id=1, instance_id=1,
-                                    active=True, author='John', description='Example description',
-                                    title=new_title)
+        # We only want to update the fields that have explicitly be set
+        mock_put.assert_called_with(json_page='page', action='action', instance_id=1, title=new_title)
 
         self.assertEqual(el.title, new_title)
 
-    @patch('models.post')
+    @patch('vosfactures.models.post')
     def test_default_data_is_added_if_not_set_explicitly_on_creation(self, mock_post):
         new_title = "A new title"
         mock_post.return_value = self._get_updated_test_data(title=new_title)
@@ -160,8 +160,8 @@ class BaseDataTest(BaseTestCase):
         # Default data should also be assigned to the class
         self.assertTrue(el.active)
 
-    @patch('models.delete')
-    @patch('models.get')
+    @patch('vosfactures.models.delete')
+    @patch('vosfactures.models.get')
     def test_test_cant_update_a_deleted_object(self, mock_get, mock_delete):
         mock_get.return_value = self.test_data
         mock_delete.return_value = {}
@@ -171,8 +171,8 @@ class BaseDataTest(BaseTestCase):
         with self.assertRaises(ObjectIsDeletedError):
             el.update()
 
-    @patch('models.delete')
-    @patch('models.get')
+    @patch('vosfactures.models.delete')
+    @patch('vosfactures.models.get')
     def test_test_cant_modify_properties_on_a_deleted_object(self, mock_get, mock_delete):
         mock_get.return_value = self.test_data
         mock_delete.return_value = {}
@@ -182,8 +182,8 @@ class BaseDataTest(BaseTestCase):
         with self.assertRaises(ObjectIsDeletedError):
             el.title = "My new title"
 
-    @patch('models.delete')
-    @patch('models.get')
+    @patch('vosfactures.models.delete')
+    @patch('vosfactures.models.get')
     def test_test_cant_delete_a_deleted_object(self, mock_get, mock_delete):
         mock_get.return_value = self.test_data
         mock_delete.return_value = {}
@@ -209,11 +209,11 @@ class ClientTest(BaseTestCase):
             'register_number': None, 'tax_no_check': None, 'attachments_count': 0, 'default_payment_type': None,
             'tax_no_kind': None, 'accounting_id': None, 'disable_auto_reminders': False, 'buyer_id': None}
 
-    @patch('models.post')
+    @patch('vosfactures.models.post')
     def test_extends_BaseData(self, _):
         self.assertIsInstance(Client.create(name="Ha"), BaseData)
 
-    @patch('models.post')
+    @patch('vosfactures.models.post')
     def test_has_magic_string(self, mock_post):
         mock_post.return_value = self.test_data
         el = Client.create(name="Customer name")
@@ -249,11 +249,11 @@ class ProductTest(BaseTestCase):
         'purchase_tax2': '0', 'supplier_code': None, 'package_products_details': None, 'siteor_disabled': False,
         'use_moss': False, 'subscription_id': None, 'accounting_id': None}
 
-    @patch('models.post')
+    @patch('vosfactures.models.post')
     def test_extends_BaseData(self, _):
         self.assertIsInstance(Product.create(name="Prod", price_net=1, tax=1), BaseData)
 
-    @patch('models.post')
+    @patch('vosfactures.models.post')
     def test_has_magic_string(self, mock_post):
         mock_post.return_value = self.test_data
         el = Product.create(name="Prod", price_net=1, tax=1)
@@ -301,35 +301,35 @@ class InvoiceTest(BaseTestCase):
                  'not_cost': False, 'reverse_charge': False, 'issuer': None, 'use_issuer': False, 'cancelled': False,
                  'recipient_id': None, 'recipient_name': None, 'sales_code': '5246-1976-90146'}
 
-    @patch('models.post')
+    @patch('vosfactures.models.post')
     def test_create_requires_products(self, _):
         # We refuse the invoices without any products
         with self.assertRaises(ValueError):
             Invoice.create(number="Inv num", title="Invoice #1", issue_date="2017-01-01", department_id=1, client_id=1,
                            positions=[])
 
-    @patch('models.post')
+    @patch('vosfactures.models.post')
     def test_create_requires_products_by_id(self, _):
         # We don't want to create the products from here, they should be passed with "product_id".
         with self.assertRaises(ValueError):
             Invoice.create(number="Inv num", title="Invoice #1", issue_date="2017-01-01", department_id=1, client_id=1,
                            positions=[{"name": "test", "quantity": 2, "tax": 10, "total_price_gross": 52.5}])
 
-    @patch('models.post')
+    @patch('vosfactures.models.post')
     def test_extends_BaseData(self, _):
         i = Invoice.create(number="Inv num", title="Invoice #1", issue_date="2017-01-01", department_id=1, client_id=1,
                            positions=[{"product_id": 1, "quantity": 3}])
         self.assertIsInstance(i, BaseData)
 
-    @patch('models.post')
+    @patch('vosfactures.models.post')
     def test_has_magic_string(self, mock_post):
         mock_post.return_value = self.test_data
         el = Invoice.create(number="Inv num", title="Invoice #1", issue_date="2017-01-01", department_id=1, client_id=1,
                             positions=[{"product_id": 1, "quantity": 3}])
         self.assertEqual(str(el), "1 : 2017-09 (797.73 EUR)")
 
-    @patch('models.get')
-    @patch('models.Invoice.update')
+    @patch('vosfactures.models.get')
+    @patch('vosfactures.models.Invoice.update')
     def test_set_status(self, mock_invoice_update, mock_get):
         mock_get.return_value = self.test_data
 
@@ -382,11 +382,11 @@ class DepartmentTest(BaseTestCase):
                  'calculate_number_by_pattern_only': False, 'footer_kind': 'default', 'use_invoice_issuer': False,
                  'cash_init_state': None, 'invoice_template_id': None}
 
-    @patch('models.get')
+    @patch('vosfactures.models.get')
     def test_extends_BaseData(self, _):
         self.assertIsInstance(Department.get(instance_id=1), BaseData)
 
-    @patch('models.get')
+    @patch('vosfactures.models.get')
     def test_has_magic_string(self, mock_get):
         mock_get.return_value = self.test_data
         el = Department.get(instance_id=1)

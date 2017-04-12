@@ -3,4 +3,4 @@ env
 __pyu
 *.pyc
 
-local_settings.py
+vosfactures/local_settings.py

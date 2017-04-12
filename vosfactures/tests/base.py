@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-import settings
+from vosfactures import settings
 
 
 class BaseTestCase(TestCase):

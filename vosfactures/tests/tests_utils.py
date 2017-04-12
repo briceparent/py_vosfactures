@@ -1,7 +1,8 @@
 from unittest.mock import patch, MagicMock
 
-from tests.base import BaseTestCase
 from utils import get, delete, post, put, HttpError
+
+from vosfactures.tests.base import BaseTestCase
 
 
 class QueryFunctionTest(BaseTestCase):
